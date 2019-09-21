@@ -6,7 +6,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 )
+
+type Parameter struct {
+	SubCommand string
+	Value      string
+}
 
 func Lunch(w http.ResponseWriter, r *http.Request) {
 	// POSTのみを許可する
@@ -43,6 +49,41 @@ func Lunch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	p := new(Parameter)
+	p.parse(parsed.Get("text"))
+	
+	switch p.SubCommand {
+	case "add":
+		// addのしょり
+
+	case "list"
+		// listのしょり
+
+	default:
+		e := "Invalid SubCommand."
+		log.Println(e)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(e))
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(parsed.Get("text")))
+	w.Write([]byte(p.Value))
+}
+
+func (p *Parameter) parse(text string) {
+	// 先頭と末尾の空白を除去
+	t := strings.TrimSpace(text)
+	if len(t) < 1 {
+		return
+	}
+	// " "で区切った文字列の0番目とそれ以降で構成された,長さ2のスライスを返却する
+	s := strings.SplitN(t, " ", 2)
+	p.SubCommand = s[0]
+
+	if len(s) == 1 {
+		return
+	}
+
+	p.Value = s[1]
 }
