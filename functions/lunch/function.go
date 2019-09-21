@@ -1,12 +1,15 @@
 package lunch
 
 import (
+	"context"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+	"time"
+
 	"cloud.google.com/go/datastore"
 )
 
@@ -16,9 +19,9 @@ type Parameter struct {
 }
 
 type Restaurant struct {
-	ID        int64     'datastore:"-"'
-	Name      string    'datastore:"name"'
-	CreatedAt time.Time 'datastore:"createdAt"'
+	ID      int64     `datastore:"-"`
+	Name    string    `datastore:"name"`
+	Created time.Time `datastore:"createdAt"`
 }
 
 func Lunch(w http.ResponseWriter, r *http.Request) {
@@ -64,8 +67,10 @@ func Lunch(w http.ResponseWriter, r *http.Request) {
 		if err := add(p.Value); err != nil {
 			log.Printf("DatastorePutError: %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(e))
+			w.Write([]byte(err.Error()))
 		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(p.Value))
 
 	case "list":
 		// listのしょり
@@ -107,11 +112,11 @@ func add(value string) error {
 	}
 
 	newKey := datastore.IncompleteKey("Restaurant", nil)
-	r := Restaurant {
-		Name: value,
+	r := Restaurant{
+		Name:    value,
 		Created: time.Now(),
 	}
-	if _, err := client.Put(ctx, newKey, $r); err != nil {
+	if _, err := client.Put(ctx, newKey, &r); err != nil {
 		return err
 	}
 	return nil
