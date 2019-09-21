@@ -7,11 +7,18 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"cloud.google.com/go/datastore"
 )
 
 type Parameter struct {
 	SubCommand string
 	Value      string
+}
+
+type Restaurant struct {
+	ID        int64     'datastore:"-"'
+	Name      string    'datastore:"name"'
+	CreatedAt time.Time 'datastore:"createdAt"'
 }
 
 func Lunch(w http.ResponseWriter, r *http.Request) {
@@ -51,12 +58,16 @@ func Lunch(w http.ResponseWriter, r *http.Request) {
 
 	p := new(Parameter)
 	p.parse(parsed.Get("text"))
-	
+
 	switch p.SubCommand {
 	case "add":
-		// addのしょり
+		if err := add(p.Value); err != nil {
+			log.Printf("DatastorePutError: %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(e))
+		}
 
-	case "list"
+	case "list":
 		// listのしょり
 
 	default:
@@ -86,4 +97,22 @@ func (p *Parameter) parse(text string) {
 	}
 
 	p.Value = s[1]
+}
+
+func add(value string) error {
+	ctx := context.Background()
+	client, err := datastore.NewClient(ctx, os.Getenv("PROJECT_NAME"))
+	if err != nil {
+		return err
+	}
+
+	newKey := datastore.IncompleteKey("Restaurant", nil)
+	r := Restaurant {
+		Name: value,
+		Created: time.Now(),
+	}
+	if _, err := client.Put(ctx, newKey, $r); err != nil {
+		return err
+	}
+	return nil
 }
